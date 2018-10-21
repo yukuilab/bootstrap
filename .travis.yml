@@ -1,30 +1,46 @@
 sudo: required
-language: node_js
+
 git:
   depth: 3
+
+language: node_js
+
 node_js:
   - "6"
   - "8"
+
+before_install:
+  - export NPM_VER_MAJ=$(npm -v | cut -d. -f1)
+  - if [[ "$NPM_VER_MAJ" -lt "6" ]]; then export NPM_CACHE_FOLDER=./node_modules; fi
+  - if [[ "$NPM_VER_MAJ" -ge "6" ]]; then export NPM_CACHE_FOLDER=$HOME/.npm; fi
+
 install:
   - bundle install --deployment --jobs=3 --retry=3 --clean
-  - npm install
+  - if [[ "$NPM_VER_MAJ" -lt "6" ]]; then npm install; fi
+  - if [[ "$NPM_VER_MAJ" -ge "6" ]]; then npm ci; fi
+
 script:
   - npm test
-  - if [ "$TRAVIS_NODE_VERSION" = "8" ]; then npm run check-broken-links; fi
+  - if [[ "$TRAVIS_NODE_VERSION" = "8" ]]; then npm run check-broken-links; fi
+
 after_success:
-  - if [ "$TRAVIS_NODE_VERSION" = "8" ]; then npm run coveralls; fi
+  - if [[ "$TRAVIS_NODE_VERSION" = "8" && "$TRAVIS_BUILD_STAGE_NAME" = "Test" ]]; then npm run coveralls; fi
+
 stages:
   - test
   - name: browser
-    if: type = push
+    if: "type = push"
+
 jobs:
   include:
     - stage: browser
       node_js: 8
-      script: if ! git log --format=%B --no-merges -n 1 | grep '\[skip browser\]'; then npm run js-test-cloud; fi
+      script: git log --format=%B --no-merges -n 1 | grep '\[skip browser\]' || npm run js-test-cloud
+
 cache:
   directories:
-    - node_modules
+    - $NPM_CACHE_FOLDER
     - vendor/bundle
+
 notifications:
   email: false
