@@ -9,10 +9,14 @@ node_js:
   - "6"
   - "8"
 
+env:
+  global:
+    - NPM_VER_MAJ=$(npm -v | cut -d. -f1)
+    - [[ "$NPM_VER_MAJ" -lt "6" ]] && NPM_CACHE_FOLDER=./node_modules || NPM_CACHE_FOLDER=$HOME/.npm
+
 before_install:
-  - export NPM_VER_MAJ=$(npm -v | cut -d. -f1)
-  - if [[ "$NPM_VER_MAJ" -lt "6" ]]; then export NPM_CACHE_FOLDER=./node_modules; fi
-  - if [[ "$NPM_VER_MAJ" -ge "6" ]]; then export NPM_CACHE_FOLDER=$HOME/.npm; fi
+  - echo $NPM_VER_MAJ
+  - echo $NPM_CACHE_FOLDER
 
 install:
   - bundle install --deployment --jobs=3 --retry=3 --clean
